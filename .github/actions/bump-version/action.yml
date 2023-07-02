@@ -1,0 +1,22 @@
+name: "Bump Version"
+description: "Change the version number based on number of commits"
+inputs:
+  package-manager:
+    type: string
+    required: true
+    default: npm
+    description: The package manager used in the repository, either "npm" or "yarn".
+outputs:
+  version:
+    description: "The bumped version number"
+    value: ${{ steps.bump.outputs.version }}
+runs:
+  using: "composite"
+  steps:
+    - run: chmod +x ${{ github.action_path }}/bump-${{ inputs.package-manager }}.sh
+      shell: bash
+    - run: ${{ github.action_path }}/bump-${{ inputs.package-manager }}.sh
+      shell: bash
+    - id: bump
+      run: echo "version=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
+      shell: bash
