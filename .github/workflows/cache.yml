@@ -1,0 +1,63 @@
+name: Cache
+on:
+  workflow_call:
+    inputs:
+      caches:
+        required: true
+        type: string
+        default: "node"
+        description: "Comma-separated list of caches to use. Available: node"
+      package-manager:
+        required: true
+        type: string
+        default: "yarn"
+        description: "Package manager to use. Available: yarn, npm"
+
+env:
+  NODE_VERSION: 18.x
+
+jobs:
+  cache:
+    name: Cache build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🔍 Validate Package Manager
+        run: |
+          if [ ${{ inputs.package-manager }} != 'npm' ] && [ ${{ inputs.package-manager }} != 'yarn' ]; then
+              echo "Package manager not supported, exiting..."
+              exit 1
+          else
+              echo "Package manager detected: ${{ inputs.package-manager }}"
+          fi
+
+      - name: ⚙️ Get Package Manager Config
+        id: config
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+              echo "cache_dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+              echo "hash=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+              echo "install_command=npm ci --cache $(npm config get cache) --prefer-offline" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+              echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+              echo "hash=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+              echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_OUTPUT
+
+      - name: ☁️ Restore Node Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.config.outputs.cache_dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.hash }}
+          restore-keys: node-cache-${{ runner.os }}-npm-
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install dependencies
+        run: ${{ steps.config.outputs.install_command }}
