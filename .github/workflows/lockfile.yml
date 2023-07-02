@@ -1,0 +1,101 @@
+name: Lockfile Maintenance
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        type: string
+        required: true
+        default: yarn
+        description: The package manager used in the repository, either "npm" or "yarn".
+
+env:
+  NODE_VERSION: 18.x
+  RUNNER_OS: linux
+  RUNNER_ARCH: x64
+
+jobs:
+  maintenance:
+    name: Lockfile maintenance with Node.js 18.x
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.REPO_TOKEN }}
+
+      - name: 🔍 Validate Package Manager
+        run: |
+          if [ ${{ inputs.package-manager }} != 'npm' ] && [ ${{ inputs.package-manager }} != 'yarn' ]; then
+            echo "Package manager not supported, exiting..."
+            exit 1
+          else
+            echo "Package manager detected: ${{ inputs.package-manager }}"
+          fi
+
+      - name: 📁 Get Cache Directory and Hash Files
+        id: cache-config
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+            echo "hashFiles='**/package-lock.json'" >> $GITHUB_OUTPUT
+          else if [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
+            echo "hashFiles='**/yarn.lock'" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ☁️ Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.cache-config.outputs.dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles(steps.cache-config.outputs.hashFiles) }}
+          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
+
+      - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            npm ci --cache ${{ steps.cache-config.outputs.dir }} --prefer-offline
+          else if [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            yarn install --frozen-lockfile
+          fi
+
+      - name: ⬆️ Update Lockfile
+        run: ${{ inputs.package-manager }} upgrade
+
+      - name: 🔍 Check Lockfile Changes
+        id: status
+        run: |
+          if [ $(git status --porcelain | wc -l) == "0" ]; then
+            echo "No lockfile changes detected, exiting..."
+            echo "STATUS=0" >> $GITHUB_OUTPUT
+          else
+            git status --porcelain
+            echo "STATUS=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ⬆️ Update Version
+        id: bump
+        if: steps.status.outputs.STATUS == '1'
+        run: |
+          chmod +x ${{ github.action_path }}/scripts/bump-${{ inputs.package-manager }}.sh
+          ${{ github.action_path }}/scripts/bump-${{ inputs.package-manager }}.sh
+          echo "VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
+
+      - name: 🚀 Push Changes
+        if: steps.status.outputs.STATUS == '1'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
+          git pull --rebase
+          git push
