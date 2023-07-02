@@ -39,12 +39,16 @@ jobs:
       - name: 📁 Get NPM Cache Directory
         id: npm-cache-dir
         if: inputs.package-manager == 'npm'
-        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT=
+        run: |
+          npm config get cache
+          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
 
       - name: 📁 Get Yarn Cache Directory
         id: yarn-cache-dir
         if: inputs.package-manager == 'yarn'
-        run: echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
+        run: |
+          yarn cache dir
+          echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
       - name: ☁️ Restore NPM Cache
         if: inputs.package-manager == 'npm'
@@ -70,7 +74,7 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
-            npm ci --cache ${{ steps.cache-dir.outputs.dir }} --prefer-offline
+            npm ci --cache ${{ steps.npm-cache-dir.outputs.dir }} --prefer-offline
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             yarn install --frozen-lockfile
           fi
@@ -107,6 +111,7 @@ jobs:
               yarn version --new-version $NEW_VERSION --no-git-tag-version
             fi
           fi
+        shell: bash
 
       - name: 🚀 Push Changes
         run: |
