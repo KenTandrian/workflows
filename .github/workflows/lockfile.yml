@@ -15,7 +15,7 @@ env:
 
 jobs:
   maintenance:
-    name: Lockfile maintenance with Node.js 18.x
+    name: Maintenance
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -50,7 +50,7 @@ jobs:
             echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
             echo "version_command=yarn version --no-git-tag-version --new-version" >> $GITHUB_OUTPUT
           fi
-          echo $GITHUB_OUTPUT
+          echo $(cat $GITHUB_OUTPUT)
 
       - name: ☁️ Restore Cache
         uses: actions/cache@v3
@@ -83,6 +83,7 @@ jobs:
 
       - name: ⬆️ Update Version
         id: bump
+        if: steps.status.outputs.STATUS == '1'
         run: |
           CURRENT_VERSION=$(npm pkg get version | tr -d '"')
           GIT_COUNT=$(git rev-list --count HEAD)
@@ -105,4 +106,4 @@ jobs:
           git status
           git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
           git pull --rebase
-          # git push
+          git push
