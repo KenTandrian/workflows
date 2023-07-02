@@ -42,7 +42,7 @@ jobs:
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
             echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
             echo "hashFiles='**/package-lock.json'" >> $GITHUB_OUTPUT
-          else if [ ${{ inputs.package-manager }} == 'yarn' ]; then
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
             echo "hashFiles='**/yarn.lock'" >> $GITHUB_OUTPUT
           fi
@@ -63,7 +63,7 @@ jobs:
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
             npm ci --cache ${{ steps.cache-config.outputs.dir }} --prefer-offline
-          else if [ ${{ inputs.package-manager }} == 'yarn' ]; then
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             yarn install --frozen-lockfile
           fi
 
