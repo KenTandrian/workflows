@@ -36,22 +36,29 @@ jobs:
             echo "Package manager detected: ${{ inputs.package-manager }}"
           fi
 
-      - name: 📁 Get Cache Directory and Hash Files
-        id: cache-config
+      - name: 📁 Get Cache Directory
+        id: cache-dir
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
             echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-            echo "hashFiles='**/package-lock.json'" >> $GITHUB_OUTPUT
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
-            echo "hashFiles='**/yarn.lock'" >> $GITHUB_OUTPUT
           fi
 
-      - name: ☁️ Restore Cache
+      - name: ☁️ Restore NPM Cache
+        if: inputs.package-manager == 'npm'
         uses: actions/cache@v3
         with:
-          path: ${{ steps.cache-config.outputs.dir }}
-          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles(steps.cache-config.outputs.hashFiles) }}
+          path: ${{ steps.cache-dir.outputs.dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
+
+      - name: ☁️ Restore Yarn Cache
+        if: inputs.package-manager == 'yarn'
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.cache-dir.outputs.dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
 
       - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
@@ -62,7 +69,7 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
-            npm ci --cache ${{ steps.cache-config.outputs.dir }} --prefer-offline
+            npm ci --cache ${{ steps.cache-dir.outputs.dir }} --prefer-offline
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             yarn install --frozen-lockfile
           fi
