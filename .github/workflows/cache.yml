@@ -69,6 +69,7 @@ jobs:
   cleanup-node:
     name: Cleanup Node.js
     if: contains(inputs.caches, 'node')
+    needs: cache
     uses: KenTandrian/workflows/.github/workflows/cleanup.yml@main
     with:
       name: Node.js
