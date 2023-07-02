@@ -36,30 +36,31 @@ jobs:
             echo "Package manager detected: ${{ inputs.package-manager }}"
           fi
 
-      - name: 📁 Get Cache Directory
-        id: cache-dir
-        run: |
-          if [ ${{ inputs.package-manager }} == 'npm' ]; then
-            echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
-          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
-            echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
-          fi
+      - name: 📁 Get NPM Cache Directory
+        id: npm-cache-dir
+        if: inputs.package-manager == 'npm'
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT=
+
+      - name: 📁 Get Yarn Cache Directory
+        id: yarn-cache-dir
+        if: inputs.package-manager == 'yarn'
+        run: echo "dir=$(yarn config get cache)" >> $GITHUB_OUTPUT
 
       - name: ☁️ Restore NPM Cache
         if: inputs.package-manager == 'npm'
         uses: actions/cache@v3
         with:
-          path: ${{ steps.cache-dir.outputs.dir }}
-          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: node-cache-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: node-cache-${{ runner.os }}-npm-
 
       - name: ☁️ Restore Yarn Cache
         if: inputs.package-manager == 'yarn'
         uses: actions/cache@v3
         with:
-          path: ${{ steps.cache-dir.outputs.dir }}
-          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
+          path: ${{ steps.yarn-cache-dir.outputs.dir }}
+          key: node-cache-${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: node-cache-${{ runner.os }}-yarn-
 
       - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v3
