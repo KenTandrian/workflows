@@ -13,6 +13,10 @@ on:
         default: "yarn"
         description: "Package manager to use. Available: yarn, npm"
 
+permissions:
+  actions: write
+  contents: read
+
 env:
   NODE_VERSION: 18.x
 
@@ -61,3 +65,11 @@ jobs:
 
       - name: 📦 Install dependencies
         run: ${{ steps.config.outputs.install_command }}
+
+  cleanup-node:
+    name: Cleanup Node.js
+    if: contains(inputs.caches, 'node')
+    uses: KenTandrian/workflows/.github/workflows/cleanup.yml@main
+    with:
+      name: Node.js
+      pattern: node-cache-Linux-${{ inputs.package-manager }}-
