@@ -90,7 +90,6 @@ jobs:
 
       - name: ⬆️ Update Version
         id: bump
-        if: steps.status.outputs.STATUS == '1'
         run: |
           chmod +x ${{ github.action_path }}/scripts/bump-${{ inputs.package-manager }}.sh
           ${{ github.action_path }}/scripts/bump-${{ inputs.package-manager }}.sh
