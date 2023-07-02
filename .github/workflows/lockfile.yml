@@ -88,17 +88,38 @@ jobs:
             echo "STATUS=1" >> $GITHUB_OUTPUT
           fi
 
+      - name: 🛎️ Checkout KenTandrian/workflows repo
+        uses: actions/checkout@v3
+        with:
+          repository: KenTandrian/workflows
+          token: ${{ secrets.GH_TOKEN }}
+          path: KenTandrian/workflows
+
       - name: ⬆️ Update Version
         id: bump
-        uses: ./.github/actions/bump-version
-        with:
-          package-manager: ${{ inputs.package-manager }}
+        run: |
+          CURRENT_VERSION=$(npm pkg get version | tr -d '"')
+          GIT_COUNT=$(git rev-list --count HEAD)
+
+          MAJOR=$(expr $(( $GIT_COUNT )) / 1000)
+          MINOR=$(expr $(( $GIT_COUNT )) % 1000 / 100)
+          PATCH=$(expr $(( $GIT_COUNT )) % 1000 % 100 + 1)
+          NEW_VERSION=$MAJOR.$MINOR.$PATCH
+
+          if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+            if [ ${{ inputs.package-manager }} == 'npm' ]; then
+              npm version $NEW_VERSION --git-tag-version false
+            elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+              yarn version --new-version $NEW_VERSION --no-git-tag-version
+            fi
+          fi
 
       - name: 🚀 Push Changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
+          git status
           git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
           git pull --rebase
           # git push
