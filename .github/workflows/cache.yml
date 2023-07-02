@@ -52,7 +52,7 @@ jobs:
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.hash }}
-          restore-keys: node-cache-${{ runner.os }}-npm-
+          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
 
       - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v3
