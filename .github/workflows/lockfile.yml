@@ -50,7 +50,7 @@ jobs:
             echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
             echo "version_command=yarn version --no-git-tag-version --new-version" >> $GITHUB_OUTPUT
           fi
-          echo $(cat $GITHUB_OUTPUT)
+          cat $GITHUB_OUTPUT
 
       - name: ☁️ Restore Cache
         uses: actions/cache@v3
