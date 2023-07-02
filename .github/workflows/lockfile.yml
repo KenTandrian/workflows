@@ -36,35 +36,27 @@ jobs:
             echo "Package manager detected: ${{ inputs.package-manager }}"
           fi
 
-      - name: 📁 Get NPM Cache Directory
-        id: npm-cache-dir
-        if: inputs.package-manager == 'npm'
+      - name: ⚙️ Get Package Manager Config
+        id: config
         run: |
-          npm config get cache
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            echo "cache_dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+            echo "install_command=npm ci --cache $(npm config get cache) --prefer-offline" >> $GITHUB_OUTPUT
+            echo "version_command=npm version $NEW_VERSION --git-tag-version false" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+            echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
+            echo "version_command=yarn version --new-version $NEW_VERSION --no-git-tag-version" >> $GITHUB_OUTPUT
+          fi
 
-      - name: 📁 Get Yarn Cache Directory
-        id: yarn-cache-dir
-        if: inputs.package-manager == 'yarn'
-        run: |
-          yarn cache dir
-          echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-
-      - name: ☁️ Restore NPM Cache
-        if: inputs.package-manager == 'npm'
+      - name: ☁️ Restore Cache
         uses: actions/cache@v3
         with:
-          path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: node-cache-${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          path: ${{ steps.config.outputs.cache_dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.suffix }}
           restore-keys: node-cache-${{ runner.os }}-npm-
-
-      - name: ☁️ Restore Yarn Cache
-        if: inputs.package-manager == 'yarn'
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.yarn-cache-dir.outputs.dir }}
-          key: node-cache-${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: node-cache-${{ runner.os }}-yarn-
 
       - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v3
@@ -72,12 +64,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: 📦 Install Dependencies
-        run: |
-          if [ ${{ inputs.package-manager }} == 'npm' ]; then
-            npm ci --cache ${{ steps.npm-cache-dir.outputs.dir }} --prefer-offline
-          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
-            yarn install --frozen-lockfile
-          fi
+        run: ${{ steps.config.outputs.install_command }}
 
       - name: ⬆️ Update Lockfile
         run: ${{ inputs.package-manager }} upgrade
@@ -105,14 +92,11 @@ jobs:
           NEW_VERSION=$MAJOR.$MINOR.$PATCH
 
           if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
-            if [ ${{ inputs.package-manager }} == 'npm' ]; then
-              npm version $NEW_VERSION --git-tag-version false
-            elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
-              yarn version --new-version $NEW_VERSION --no-git-tag-version
-            fi
+            ${{ steps.config.outputs.version_command }}
           fi
 
       - name: 🚀 Push Changes
+        if: steps.status.outputs.STATUS == '1'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
