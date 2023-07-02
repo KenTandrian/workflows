@@ -18,7 +18,7 @@ env:
 
 jobs:
   cache:
-    name: Cache build
+    name: Cache
     runs-on: ubuntu-latest
     steps:
       - name: 🛎️ Checkout repository
