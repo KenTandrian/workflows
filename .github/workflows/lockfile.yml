@@ -96,15 +96,21 @@ jobs:
       - name: ⬆️ Update Version
         id: bump
         run: |
+          npm pkg get version
           CURRENT_VERSION=$(npm pkg get version | tr -d '"')
+          echo "CURRENT_VERSION=$CURRENT_VERSION"
+          git rev-list --count HEAD
           GIT_COUNT=$(git rev-list --count HEAD)
+          echo "GIT_COUNT=$GIT_COUNT"
 
           MAJOR=$(expr $(( $GIT_COUNT )) / 1000)
           MINOR=$(expr $(( $GIT_COUNT )) % 1000 / 100)
           PATCH=$(expr $(( $GIT_COUNT )) % 1000 % 100 + 1)
           NEW_VERSION=$MAJOR.$MINOR.$PATCH
+          echo "NEW_VERSION=$NEW_VERSION"
 
           if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+            
             if [ ${{ inputs.package-manager }} == 'npm' ]; then
               npm version $NEW_VERSION --git-tag-version false
             elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
