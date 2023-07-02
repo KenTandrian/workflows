@@ -111,7 +111,6 @@ jobs:
               yarn version --new-version $NEW_VERSION --no-git-tag-version
             fi
           fi
-        shell: bash
 
       - name: 🚀 Push Changes
         run: |
