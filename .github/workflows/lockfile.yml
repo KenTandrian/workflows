@@ -88,13 +88,6 @@ jobs:
             echo "STATUS=1" >> $GITHUB_OUTPUT
           fi
 
-      - name: 🛎️ Checkout KenTandrian/workflows repo
-        uses: actions/checkout@v3
-        with:
-          repository: KenTandrian/workflows
-          token: ${{ secrets.GH_TOKEN }}
-          path: KenTandrian/workflows
-
       - name: ⬆️ Update Version
         id: bump
         run: |
