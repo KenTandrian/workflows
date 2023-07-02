@@ -1,0 +1,64 @@
+name: Cache Composer
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: "PHP Version"
+        default: "8.1"
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cache:
+    name: Cache
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Setup PHP ${{ inputs.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: mbstring, dom, fileinfo, sqlite, mysql, pgsql
+          coverage: none
+
+      - name: 🔍 Check PHP Version
+        run: php -v
+
+      - name: 🔍 Check Composer Version
+        run: composer -V
+
+      - name: 🔍 Check PHP Extensions
+        run: php -m
+
+      - name: ✅ Validate composer.json and composer.lock
+        run: composer validate
+
+      - name: 📁 Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: ☁️ Cache Composer Files
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ inputs.php-version }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-${{ inputs.php-version }}-${{ hashFiles('**/composer.lock') }}
+            ${{ runner.os }}-composer-${{ inputs.php-version }}
+            ${{ runner.os }}-composer-
+
+      - name: 📦 Install Composer Dependencies
+        run: composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader
+
+  cleanup:
+    name: Cleanup
+    needs: cache
+    uses: KenTandrian/workflows/.github/workflows/cleanup.yml@main
+    with:
+      name: Composer
+      pattern: Linux-composer-${{ inputs.php-version }}-
