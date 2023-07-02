@@ -96,6 +96,7 @@ jobs:
           if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
             ${{ steps.config.outputs.version_command }} $NEW_VERSION
           fi
+          echo "VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
 
       - name: 🚀 Push Changes
         if: steps.status.outputs.STATUS == '1'
