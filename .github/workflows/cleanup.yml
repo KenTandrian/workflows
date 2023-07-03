@@ -39,7 +39,7 @@ jobs:
               echo "Found $(( $noOfCacheKeys )) $2 cache keys, deleting $toDelete cache(s)."
 
               if [ $toDelete -eq 0 ]; then
-                echo "No cache keys to delete for $2, exiting..."
+                echo "Cache for $2 is clean! ✨"
                 exit 0
               fi
 
