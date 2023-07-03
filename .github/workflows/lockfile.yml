@@ -56,7 +56,8 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: ☁️ Restore Cache
-        uses: actions/cache@v3
+        id: restore
+        uses: actions/cache/restore@v3
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.suffix }}
@@ -113,3 +114,29 @@ jobs:
           git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
           git pull --rebase
           git push
+
+      - name: ⚙️ Get New Cache Hash
+        if: steps.restore.outputs.cache-hit != 'true'
+        id: hash
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            echo "suffix=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_OUTPUT
+
+      - name: ☁️ Save New Cache
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ steps.config.outputs.cache_dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.hash.outputs.suffix }}
+
+  cleanup-node:
+    name: Cleanup Old Cache
+    needs: maintenance
+    uses: KenTandrian/workflows/.github/workflows/cleanup.yml@main
+    with:
+      name: Node.js
+      pattern: node-cache-Linux-${{ inputs.package-manager }}-
