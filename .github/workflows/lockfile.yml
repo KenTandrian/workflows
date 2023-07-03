@@ -17,6 +17,14 @@ on:
       post-version:
         type: string
         description: Commands to run after bumping to new version.
+      username:
+        description: "User name to be used for git commit."
+        type: string
+        default: github-actions[bot]
+      email:
+        description: "Email to be used for git commit."
+        type: string
+        default: github-actions[bot]@users.noreply.github.com
 
 env:
   NODE_VERSION: 18.x
@@ -114,8 +122,8 @@ jobs:
       - name: 🚀 Push Changes
         if: steps.status.outputs.STATUS == '1'
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name '${{ inputs.username }}'
+          git config --global user.email '${{ inputs.email }}'
           git add .
           git status
           git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
