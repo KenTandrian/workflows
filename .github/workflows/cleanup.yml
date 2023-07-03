@@ -34,8 +34,9 @@ jobs:
               KEY_PATTERN="$1"
               echo -e "\nFetching list of cache keys for $2..."
               cacheKeys=$(gh actions-cache list -R $REPO $BRANCH_FILTER --key $KEY_PATTERN --sort created-at --order desc | cut -f 1 )
-              noOfCacheKeys=$(echo "$cacheKeys" | wc -l)
-              echo "Found $noOfCacheKeys $2 cache keys, deleting $(expr $noOfCacheKeys - 1) cache(s)."
+              noOfCacheKeys=$(( $(echo "$cacheKeys" | sed '/^[[:space:]]*$/d' | wc -l) || 0 ))
+              toDelete=$(( $noOfCacheKeys - 1 >= 0 ? toDelete : 0 ))
+              echo "Found $noOfCacheKeys $2 cache keys, deleting $toDelete cache(s)."
 
               ## Setting this to not fail the workflow while deleting cache keys. 
               set +e
