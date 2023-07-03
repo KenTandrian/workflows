@@ -118,9 +118,9 @@ jobs:
         id: hash
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
-            echo "suffix=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('./package-lock.json') }}" >> $GITHUB_OUTPUT
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
-            echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('./yarn.lock') }}" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
 
