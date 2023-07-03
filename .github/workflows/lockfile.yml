@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.REPO_TOKEN }}
+          token: ${{ secrets.REPO_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: 🔍 Validate Package Manager
         run: |
