@@ -1,0 +1,145 @@
+name: Lockfile Maintenance
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        type: string
+        required: true
+        default: npm
+        description: The package manager used in the repository, either "npm" or "yarn".
+      base-version:
+        type: number
+        default: 0
+        description: The base major version of the repository.
+      post-upgrade:
+        type: string
+        description: Commands to run after upgrading lockfile.
+      post-version:
+        type: string
+        description: Commands to run after bumping to new version.
+
+env:
+  NODE_VERSION: 18.x
+  RUNNER_OS: linux
+  RUNNER_ARCH: x64
+
+jobs:
+  maintenance:
+    name: Maintenance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.REPO_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 🔍 Validate Package Manager
+        run: |
+          if [ ${{ inputs.package-manager }} != 'npm' ] && [ ${{ inputs.package-manager }} != 'yarn' ]; then
+            echo "Package manager not supported, exiting..."
+            exit 1
+          else
+            echo "Package manager detected: ${{ inputs.package-manager }}"
+          fi
+
+      - name: ⚙️ Get Package Manager Config
+        id: config
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            echo "cache_dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+            echo "install_command=npm ci --cache $(npm config get cache) --prefer-offline" >> $GITHUB_OUTPUT
+            echo "version_command=npm version --git-tag-version false" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+            echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
+            echo "version_command=yarn version --no-git-tag-version --new-version" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_OUTPUT
+
+      - name: ☁️ Restore Cache
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ steps.config.outputs.cache_dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.suffix }}
+          restore-keys: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-
+
+      - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 📦 Install Dependencies
+        run: ${{ steps.config.outputs.install_command }}
+
+      - name: ⬆️ Update Lockfile
+        run: |
+          ${{ inputs.package-manager }} upgrade
+          ${{ inputs.post-upgrade }}
+
+      - name: 🔍 Check Lockfile Changes
+        id: status
+        run: |
+          if [ $(git status --porcelain | wc -l) == "0" ]; then
+            echo "No lockfile changes detected, exiting..."
+            echo "STATUS=0" >> $GITHUB_OUTPUT
+          else
+            git status --porcelain
+            echo "STATUS=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ⬆️ Update Version
+        id: bump
+        if: steps.status.outputs.STATUS == '1'
+        run: |
+          CURRENT_VERSION=$(npm pkg get version | tr -d '"')
+          GIT_COUNT=$(git rev-list --count HEAD)
+
+          MAJOR=$(( $(( $GIT_COUNT )) / 1000 + ${{ inputs.base-version }}))
+          MINOR=$(( $(( $GIT_COUNT )) % 1000 / 100 ))
+          PATCH=$(( $(( $GIT_COUNT )) % 1000 % 100 + 1 ))
+          NEW_VERSION=$MAJOR.$MINOR.$PATCH
+
+          if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+            ${{ steps.config.outputs.version_command }} $NEW_VERSION
+            ${{ inputs.post-version }}
+          fi
+          echo "VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
+
+      - name: 🚀 Create Pull Request
+        if: steps.status.outputs.STATUS == '1'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
+          title: "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
+          body: |
+            This PR was created automatically by GitHub Actions. It updates the lockfile and bumps the version.
+            All locks refreshed! ✨
+          committer: "${{ github.actor }} <${{ github.event.sender.id }}+${{ github.actor }}@users.noreply.github.com>"
+          author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          branch: "actions/lockfile-maintenance-${{ steps.bump.outputs.VERSION }}"
+          delete-branch: true
+
+      - name: ⚙️ Get New Cache Hash
+        id: hash
+        run: |
+          if [ ${{ inputs.package-manager }} == 'npm' ]; then
+            echo "suffix=${{ hashFiles('./package-lock.json') }}" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            echo "suffix=${{ hashFiles('./yarn.lock') }}" >> $GITHUB_OUTPUT
+          fi
+          cat $GITHUB_OUTPUT
+
+      - name: ☁️ Save New Cache
+        if: steps.config.outputs.suffix != steps.hash.outputs.suffix
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ steps.config.outputs.cache_dir }}
+          key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.hash.outputs.suffix }}
