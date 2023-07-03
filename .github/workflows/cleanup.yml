@@ -24,7 +24,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
-      BRANCH_FILTER: ${{ inputs.branch == '' && '' || format('-B {0}', inputs.branch) }}
+      BRANCH_FILTER: ${{ inputs.branch != '' && format('-B {0}', inputs.branch) || '' }}
     steps:
       - name: 🛎️ Checkout repository
         uses: actions/checkout@v3
