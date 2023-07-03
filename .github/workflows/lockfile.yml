@@ -56,7 +56,6 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: ☁️ Restore Cache
-        id: restore
         uses: actions/cache/restore@v3
         with:
           path: ${{ steps.config.outputs.cache_dir }}
@@ -116,7 +115,6 @@ jobs:
           git push
 
       - name: ⚙️ Get New Cache Hash
-        if: steps.restore.outputs.cache-hit != 'true'
         id: hash
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
@@ -127,7 +125,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: ☁️ Save New Cache
-        if: steps.restore.outputs.cache-hit != 'true'
+        if: steps.config.outputs.suffix != steps.hash.outputs.suffix
         uses: actions/cache/save@v3
         with:
           path: ${{ steps.config.outputs.cache_dir }}
