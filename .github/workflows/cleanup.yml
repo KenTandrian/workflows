@@ -38,6 +38,11 @@ jobs:
               toDelete=$(( $noOfCacheKeys - 1 >= 0 ? $noOfCacheKeys - 1 : 0 ))
               echo "Found $(( $noOfCacheKeys )) $2 cache keys, deleting $toDelete cache(s)."
 
+              if [ $toDelete -eq 0 ]; then
+                echo "No cache keys to delete for $2, exiting..."
+                exit 0
+              fi
+
               ## Setting this to not fail the workflow while deleting cache keys. 
               set +e
               echo "$(tail -n +2 <<< "$cacheKeys")" | while read -r line; do
