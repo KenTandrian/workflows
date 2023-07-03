@@ -7,6 +7,10 @@ on:
         required: true
         default: npm
         description: The package manager used in the repository, either "npm" or "yarn".
+      base-version:
+        type: number
+        default: 0
+        description: The base major version of the repository.
       post-upgrade:
         type: string
         description: Commands to run after upgrading lockfile.
@@ -93,7 +97,7 @@ jobs:
           CURRENT_VERSION=$(npm pkg get version | tr -d '"')
           GIT_COUNT=$(git rev-list --count HEAD)
 
-          MAJOR=$(( $(( $GIT_COUNT )) / 1000 ))
+          MAJOR=$(( $(( $GIT_COUNT )) / 1000 + ${{ inputs.base-version }}))
           MINOR=$(( $(( $GIT_COUNT )) % 1000 / 100 ))
           PATCH=$(( $(( $GIT_COUNT )) % 1000 % 100 + 1 ))
           NEW_VERSION=$MAJOR.$MINOR.$PATCH
