@@ -7,6 +7,9 @@ on:
         required: true
         default: npm
         description: The package manager used in the repository, either "npm" or "yarn".
+      post-upgrade:
+        type: string
+        description: Commands to run after upgrading lockfile.
 
 env:
   NODE_VERSION: 18.x
@@ -68,7 +71,9 @@ jobs:
         run: ${{ steps.config.outputs.install_command }}
 
       - name: ⬆️ Update Lockfile
-        run: ${{ inputs.package-manager }} upgrade
+        run: |
+          ${{ inputs.package-manager }} upgrade
+          ${{ inputs.post-upgrade }}
 
       - name: 🔍 Check Lockfile Changes
         id: status
