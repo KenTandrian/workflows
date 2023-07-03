@@ -132,11 +132,3 @@ jobs:
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.hash.outputs.suffix }}
-
-  cleanup-node:
-    name: Cleanup Old Cache
-    needs: maintenance
-    uses: KenTandrian/workflows/.github/workflows/cleanup.yml@main
-    with:
-      name: Node.js
-      pattern: node-cache-Linux-${{ inputs.package-manager }}-
