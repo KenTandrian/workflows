@@ -1,0 +1,21 @@
+name: Approve and Enable Auto-Merge
+on: workflow_call
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  review:
+    name: Approve and Auto-Merge
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' }}
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Enable squash auto-merge for PR
+        run: gh pr merge --auto --squash "$PR_URL"
+
+      - name: Approve PR
+        run: gh pr review $PR_URL --approve -b "I'm **approving** this pull request!"
