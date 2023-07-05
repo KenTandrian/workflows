@@ -17,6 +17,9 @@ on:
       post-version:
         type: string
         description: Commands to run after bumping to new version.
+    secrets:
+      REPO_TOKEN:
+        description: A GitHub token with repo access.
 
 env:
   NODE_VERSION: 18.x
