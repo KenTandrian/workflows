@@ -20,7 +20,7 @@ on:
       working-directory:
         type: string
         description: Directory to run this workflow.
-        default: ./
+        default: .
     secrets:
       REPO_TOKEN:
         description: A GitHub token with repo access.
