@@ -17,6 +17,10 @@ on:
       post-version:
         type: string
         description: Commands to run after bumping to new version.
+      working-directory:
+        type: string
+        description: Directory to run this workflow.
+        default: ./
     secrets:
       REPO_TOKEN:
         description: A GitHub token with repo access.
@@ -32,6 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
     steps:
       - name: 🛎️ Checkout Repository
         uses: actions/checkout@v3
