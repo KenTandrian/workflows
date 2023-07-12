@@ -34,4 +34,4 @@ jobs:
         if: ${{steps.dependabot-metadata.outputs.update-type == 'version-update:semver-major' && steps.dependabot-metadata.outputs.dependency-type == 'direct:production'}}
         run: |
           gh pr comment $PR_URL --body "I'm **not approving** this PR because **it includes a major update of a dependency used in production**"
-          gh pr edit $PR_URL --add-label "requires-manual-qa" --add-reviewer "${{ github.repository_owner }}"
+          gh pr edit $PR_URL --add-label "requires-manual-qa"
