@@ -11,12 +11,6 @@ on:
         type: number
         default: 0
         description: The base major version of the repository.
-      post-upgrade:
-        type: string
-        description: Commands to run after upgrading lockfile.
-      post-version:
-        type: string
-        description: Commands to run after bumping to new version.
     secrets:
       REPO_TOKEN:
         description: A GitHub token with repo access.
@@ -85,7 +79,6 @@ jobs:
       - name: ⬆️ Update Lockfile
         run: |
           ${{ inputs.package-manager }} upgrade
-          ${{ inputs.post-upgrade }}
 
       - name: 🔍 Check Lockfile Changes
         id: status
@@ -112,7 +105,6 @@ jobs:
 
           if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
             ${{ steps.config.outputs.version_command }} $NEW_VERSION
-            ${{ inputs.post-version }}
           fi
           echo "VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
 
