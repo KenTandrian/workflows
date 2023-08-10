@@ -31,6 +31,7 @@ jobs:
         run: gh pr review $PR_URL --approve -b "I'm **approving** this pull request because **it includes a major update of a dependency used only in development**"
 
       - name: Comment on major updates of non-development dependencies
+        continue-on-error: true
         if: ${{steps.dependabot-metadata.outputs.update-type == 'version-update:semver-major' && steps.dependabot-metadata.outputs.dependency-type == 'direct:production'}}
         run: |
           gh pr comment $PR_URL --body "I'm **not approving** this PR because **it includes a major update of a dependency used in production**"
