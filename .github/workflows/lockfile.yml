@@ -60,6 +60,7 @@ jobs:
             echo "version_command=npm version --git-tag-version false" >> $GITHUB_OUTPUT
             echo "upgrade_command=npm upgrade" >> $GITHUB_OUTPUT
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
+            corepack enable
             YARN_VERSION=$(yarn --version)
             if [[ $YARN_VERSION =~ ^1.* ]]; then
               echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
