@@ -58,11 +58,22 @@ jobs:
             echo "suffix=${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
             echo "install_command=npm ci --cache $(npm config get cache) --prefer-offline" >> $GITHUB_OUTPUT
             echo "version_command=npm version --git-tag-version false" >> $GITHUB_OUTPUT
+            echo "upgrade_command=npm upgrade" >> $GITHUB_OUTPUT
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
-            echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-            echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
-            echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
-            echo "version_command=yarn version --no-git-tag-version --new-version" >> $GITHUB_OUTPUT
+            YARN_VERSION=$(yarn --version)
+            if [[ $YARN_VERSION =~ ^1.* ]]; then
+              echo "cache_dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+              echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+              echo "install_command=yarn install --frozen-lockfile" >> $GITHUB_OUTPUT
+              echo "version_command=yarn version --no-git-tag-version --new-version" >> $GITHUB_OUTPUT
+              echo "upgrade_command=yarn upgrade" >> $GITHUB_OUTPUT
+            else
+              echo "cache_dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+              echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+              echo "install_command=yarn install --immutable" >> $GITHUB_OUTPUT
+              echo "version_command=yarn version" >> $GITHUB_OUTPUT
+              echo "upgrade_command=rm yarn.lock && yarn up --mode=update-lockfile" >> $GITHUB_OUTPUT
+            fi
           fi
           cat $GITHUB_OUTPUT
 
@@ -82,8 +93,7 @@ jobs:
         run: ${{ steps.config.outputs.install_command }}
 
       - name: ⬆️ Update Lockfile
-        run: |
-          ${{ inputs.package-manager }} upgrade
+        run: ${{ steps.config.outputs.upgrade_command }}
 
       - name: 🔍 Check Lockfile Changes
         id: status
@@ -121,7 +131,7 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
           git status
-          git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
+          git commit -m "chore(deps): v${{ steps.bump.outputs.VERSION }} - lock file maintenance"
           git pull --rebase
           git push
 
