@@ -52,7 +52,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: ☁️ Restore Node Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.hash }}
