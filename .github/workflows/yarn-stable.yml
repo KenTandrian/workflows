@@ -49,7 +49,7 @@ jobs:
           fi
       
       - name: ⬆️ Re-install dependencies
-        run: yarn install
+        run: yarn install --no-immutable
 
       - name: 🚀 Push Changes
         if: steps.status.outputs.STATUS == '1'
