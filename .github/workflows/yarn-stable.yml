@@ -1,0 +1,60 @@
+name: Upgrade Yarn Version
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        description: Directory to run this workflow.
+        default: .
+    secrets:
+      REPO_TOKEN:
+        description: A GitHub token with repo access.
+
+jobs:
+  run:
+    name: Run upgrade
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.REPO_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 📦 Get Old Version
+        id: old
+        run: echo "VERSION=$(yarn --version)" >> $GITHUB_OUTPUT
+
+      - name: ⬆️ Set Yarn Version
+        id: new
+        run: |
+          yarn set version stable
+          echo "VERSION=$(yarn --version)" >> $GITHUB_OUTPUT
+
+      - name: 🔍 Check Lockfile Changes
+        id: status
+        run: |
+          if [ $(git status --porcelain | wc -l) == "0" ]; then
+            echo "No changes detected, exiting..."
+            echo "STATUS=0" >> $GITHUB_OUTPUT
+          else
+            git status --porcelain
+            echo "STATUS=1" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🚀 Push Changes
+        if: steps.status.outputs.STATUS == '1'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git status
+          git commit -m "chore(deps): upgrade yarn from ${{ steps.old.outputs.VERSION }} to ${{ steps.new.outputs.VERSION }}"
+          git pull --rebase
+          git push
