@@ -70,7 +70,12 @@ jobs:
             else
               echo "cache_dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
               echo "install_command=yarn install --immutable" >> $GITHUB_OUTPUT
-              echo "version_command=yarn version" >> $GITHUB_OUTPUT
+              WORKSPACES=$(yarn workspaces list --json | wc -l)
+              if (( $WORKSPACES > 1 )); then
+                echo "version_command=yarn workspaces foreach -A version" >> $GITHUB_OUTPUT
+              else
+                echo "version_command=yarn version" >> $GITHUB_OUTPUT
+              fi
               echo "upgrade_command=rm yarn.lock && yarn up --mode=update-lockfile" >> $GITHUB_OUTPUT
             fi
             echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
