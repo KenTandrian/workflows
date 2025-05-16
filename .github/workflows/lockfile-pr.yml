@@ -17,7 +17,7 @@ on:
         required: true
 
 env:
-  NODE_VERSION: 18.x
+  NODE_VERSION: 22.x
   RUNNER_OS: linux
   RUNNER_ARCH: x64
 
