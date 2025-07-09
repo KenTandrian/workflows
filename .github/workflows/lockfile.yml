@@ -6,7 +6,7 @@ on:
         type: string
         required: true
         default: npm
-        description: The package manager used in the repository, either "npm" or "yarn".
+        description: The package manager used in the repository, either "npm", "pnpm", or "yarn".
       base-version:
         type: number
         default: 0
@@ -43,12 +43,18 @@ jobs:
 
       - name: 🔍 Validate Package Manager
         run: |
-          if [ ${{ inputs.package-manager }} != 'npm' ] && [ ${{ inputs.package-manager }} != 'yarn' ]; then
+          if [ ${{ inputs.package-manager }} != 'npm' ] && [ ${{ inputs.package-manager }} != 'pnpm' ] && [ ${{ inputs.package-manager }} != 'yarn' ]; then
             echo "Package manager not supported, exiting..."
             exit 1
           else
             echo "Package manager detected: ${{ inputs.package-manager }}"
           fi
+
+      - name: ⚙️ Setup PNPM
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
 
       - name: ⚙️ Get Package Manager Config
         id: config
@@ -79,6 +85,12 @@ jobs:
               echo "upgrade_command=rm yarn.lock && yarn up --mode=update-lockfile" >> $GITHUB_OUTPUT
             fi
             echo "suffix=${{ hashFiles('**/yarn.lock') }}" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'pnpm' ]; then
+            echo "cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+            echo "suffix=${{ hashFiles('**/pnpm-lock.yaml') }}" >> $GITHUB_OUTPUT
+            echo "install_command=pnpm install --frozen-lockfile" >> $GITHUB_OUTPUT
+            echo "version_command=pnpm version --no-git-tag-version" >> $GITHUB_OUTPUT
+            echo "upgrade_command=pnpm up" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
 
@@ -145,6 +157,8 @@ jobs:
         run: |
           if [ ${{ inputs.package-manager }} == 'npm' ]; then
             echo "suffix=${{ hashFiles(format('{0}/package-lock.json', inputs.working-directory)) }}" >> $GITHUB_OUTPUT
+          elif [ ${{ inputs.package-manager }} == 'pnpm' ]; then
+            echo "suffix=${{ hashFiles(format('{0}/pnpm-lock.yaml', inputs.working-directory)) }}" >> $GITHUB_OUTPUT
           elif [ ${{ inputs.package-manager }} == 'yarn' ]; then
             echo "suffix=${{ hashFiles(format('{0}/yarn.lock', inputs.working-directory)) }}" >> $GITHUB_OUTPUT
           fi
