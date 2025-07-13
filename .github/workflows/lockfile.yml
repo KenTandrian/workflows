@@ -90,7 +90,7 @@ jobs:
             echo "suffix=${{ hashFiles('**/pnpm-lock.yaml') }}" >> $GITHUB_OUTPUT
             echo "install_command=pnpm install --frozen-lockfile" >> $GITHUB_OUTPUT
             echo "version_command=pnpm version --no-git-tag-version" >> $GITHUB_OUTPUT
-            echo "upgrade_command=pnpm up" >> $GITHUB_OUTPUT
+            echo "upgrade_command=pnpm up -r" >> $GITHUB_OUTPUT
           fi
           cat $GITHUB_OUTPUT
 
