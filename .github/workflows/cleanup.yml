@@ -27,7 +27,7 @@ jobs:
       BRANCH_FILTER: ${{ inputs.branch != '' && format('-B {0}', inputs.branch) || '' }}
     steps:
       - name: 🛎️ Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: 🧽 Cleanup
         run: |
           function clearCaches {
