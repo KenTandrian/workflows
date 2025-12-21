@@ -20,7 +20,7 @@ on:
         description: A GitHub token with repo access.
 
 env:
-  NODE_VERSION: 22.x
+  NODE_VERSION: 24.x
   RUNNER_OS: linux
   RUNNER_ARCH: x64
 
