@@ -7,10 +7,6 @@ on:
         required: true
         default: npm
         description: The package manager used in the repository, either "npm" or "yarn".
-      base-version:
-        type: number
-        default: 0
-        description: The base major version of the repository.
     secrets:
       REPO_TOKEN:
         description: A GitHub token with repo access.
@@ -91,37 +87,19 @@ jobs:
             echo "STATUS=1" >> $GITHUB_OUTPUT
           fi
 
-      - name: ⬆️ Update Version
-        id: bump
-        if: steps.status.outputs.STATUS == '1'
-        run: |
-          CURRENT_VERSION=$(npm pkg get version | tr -d '"')
-          CURRENT_GIT_COUNT=$(git rev-list --count HEAD)
-          GIT_COUNT=$(($CURRENT_GIT_COUNT + 1))
-
-          MAJOR=$(( $(( $GIT_COUNT )) / 1000 + ${{ inputs.base-version }}))
-          MINOR=$(( $(( $GIT_COUNT )) % 1000 / 100 ))
-          PATCH=$(( $(( $GIT_COUNT )) % 1000 % 100 ))
-          NEW_VERSION=$MAJOR.$MINOR.$PATCH
-
-          if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
-            ${{ steps.config.outputs.version_command }} $NEW_VERSION
-          fi
-          echo "VERSION=$(npm pkg get version | tr -d '"')" >> $GITHUB_OUTPUT
-
       - name: 🚀 Create Pull Request
         if: steps.status.outputs.STATUS == '1'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.REPO_TOKEN || secrets.GITHUB_TOKEN }}
-          commit-message: "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
-          title: "chore(deps): v${{ steps.bump.outputs.VERSION }} - lockfile maintenance"
+          commit-message: "chore(deps): lock file maintenance"
+          title: "chore(deps): lock file maintenance"
           body: |
-            This PR was created automatically by GitHub Actions. It updates the lockfile and bumps the version.
+            This PR was created automatically by GitHub Actions. It updates the lockfile.
             All locks refreshed! ✨
           committer: "${{ github.actor }} <${{ github.event.sender.id }}+${{ github.actor }}@users.noreply.github.com>"
           author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
-          branch: "actions/lockfile-maintenance-${{ steps.bump.outputs.VERSION }}"
+          branch: "actions/lock-file-maintenance"
           delete-branch: true
 
       - name: ⚙️ Get New Cache Hash
