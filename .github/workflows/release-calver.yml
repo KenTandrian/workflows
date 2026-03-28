@@ -1,0 +1,50 @@
+name: CalVer Release
+on: workflow_call
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Calculate Version and Bump
+        run: |
+          CALVER_DATE=$(date +'%Y.%m.%d')
+          LATEST_TAG=$(git tag -l "v$CALVER_DATE*" | sort -V | tail -n 1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            NEW_VERSION="$CALVER_DATE"
+          else
+            if [[ $LATEST_TAG == *.*.*.* ]]; then
+              MICRO=$(echo $LATEST_TAG | awk -F. '{print $4}')
+              NEW_MICRO=$((MICRO + 1))
+              NEW_VERSION="$CALVER_DATE.$NEW_MICRO"
+            else
+              NEW_VERSION="$CALVER_DATE.1"
+            fi
+          fi
+          
+          echo "Bumping package.json to $NEW_VERSION"
+          
+          # This command updates the file, commits it, and tags it.
+          npm version $NEW_VERSION -m "chore(pkg): bump version to v%s"
+          
+          # Push the new commit and the new tag back to GitHub
+          git push origin main --follow-tags
