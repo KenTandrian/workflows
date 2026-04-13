@@ -48,7 +48,7 @@ jobs:
 
       - name: ⚙️ Setup PNPM
         if: inputs.package-manager == 'pnpm'
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
