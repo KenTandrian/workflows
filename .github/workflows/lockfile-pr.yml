@@ -58,7 +58,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: ☁️ Restore Cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.config.outputs.suffix }}
@@ -114,7 +114,7 @@ jobs:
 
       - name: ☁️ Save New Cache
         if: steps.config.outputs.suffix != steps.hash.outputs.suffix
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ${{ steps.config.outputs.cache_dir }}
           key: node-cache-${{ runner.os }}-${{ inputs.package-manager }}-${{ steps.hash.outputs.suffix }}
